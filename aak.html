@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareerPath AI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f3f5f7;
+    }
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      background: #e6e9ef;
+      padding: 10px;
+    }
+    nav button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #4a90e2;
+      color: white;
+      cursor: pointer;
+    }
+    nav button:hover {
+      background: #357ABD;
+    }
+    section {
+      display: none;
+      padding: 20px;
+    }
+    section.active {
+      display: block;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    .chip {
+      display: inline-block;
+      padding: 8px 12px;
+      background: #d0e4ff;
+      margin: 5px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+    .chip.active {
+      background: #4a90e2;
+      color: white;
+    }
+    #statusText {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
+    #preview {
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>CareerPath AI</h1>
+</header>
+
+<nav>
+  <button onclick="navigateTo('home')">Home</button>
+  <button onclick="navigateTo('quiz')">Career Quiz</button>
+  <button onclick="navigateTo('chat')">Chatbot</button>
+</nav>
+
+<!-- Home Section -->
+<section id="home" class="section active">
+  <h2>Welcome to CareerPath AI</h2>
+  <p>This smart tool helps you explore your ideal career path based on your education, interests, and skills.</p>
+  <div id="preview">No profile saved yet.</div>
+</section>
+
+<!-- Quiz Section -->
+<section id="quiz" class="section">
+  <h2>Career Quiz</h2>
+  <div class="input-group">
+    <label for="q-name">Full Name</label>
+    <input type="text" id="q-name" placeholder="Enter your name">
+  </div>
+  <div class="input-group">
+    <label for="q-age">Age</label>
+    <input type="number" id="q-age" placeholder="Enter your age">
+  </div>
+  <div class="input-group">
+    <label for="q-education">Education Level</label>
+    <select id="q-education">
+      <option value="">Select education</option>
+      <option>High School</option>
+      <option>Bachelor's</option>
+      <option>Master's</option>
+      <option>PhD</option>
+    </select>
+  </div>
+  <div class="input-group">
+    <label for="q-skills">Key Skills</label>
+    <textarea id="q-skills" placeholder="List your key skills"></textarea>
+  </div>
+
+  <div class="input-group">
+    <label>Choose your area of interest</label>
+    <div id="interests">
+      <div class="chip" data-val="Technology">Technology</div>
+      <div class="chip" data-val="Design">Design</div>
+      <div class="chip" data-val="Business">Business</div>
+      <div class="chip" data-val="Science">Science</div>
+      <div class="chip" data-val="Arts">Arts</div>
+    </div>
+  </div>
+
+  <button onclick="saveProfile()">Save Profile</button>
+  <div id="statusText"></div>
+</section>
+
+<!-- Chat Section -->
+<section id="chat" class="section">
+  <h2>AI Career Chatbot</h2>
+  <div id="chatbox" style="background:#fff;border-radius:8px;padding:10px;height:200px;overflow-y:auto;"></div>
+  <input id="userInput" type="text" placeholder="Ask something..." style="width:80%;padding:8px;">
+  <button onclick="sendMessage()">Send</button>
+</section>
+
+<script>
+const PKEY = 'careerProfile';
+
+// Navigation between sections
+function navigateTo(id) {
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Handle chips for interest selection
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+// Save profile function
+function saveProfile() {
+  const name = document.getElementById('q-name').value.trim();
+  const education = document.getElementById('q-education').value;
+  const age = document.getElementById('q-age').value.trim();
+  const skills = document.getElementById('q-skills').value.trim();
+  const interestEl = document.querySelector('.chip.active');
+  const interest = interestEl ? interestEl.dataset.val : '';
+
+  if (!name || !education || !interest) {
+    alert('Please enter your name, education, and select an interest.');
+    return;
+  }
+
+  const profile = { name, education, age, interest, skills, savedAt: new Date().toISOString() };
+  localStorage.setItem(PKEY, JSON.stringify(profile));
+
+  refreshProfilePreview();
+  document.getElementById('statusText').textContent = `Profile saved • ${profile.name}`;
+}
+
+// Refresh profile on Home section
+function refreshProfilePreview() {
+  const preview = document.getElementById('preview');
+  const p = JSON.parse(localStorage.getItem(PKEY) || '{}');
+  if (!p.name) {
+    preview.textContent = 'No profile saved yet.';
+  } else {
+    preview.textContent = `Name: ${p.name}
+Education: ${p.education}
+Age: ${p.age || '-'}
+Interest: ${p.interest}
+Skills: ${p.skills || '-'}
+Saved: ${new Date(p.savedAt).toLocaleString()}`;
+  }
+}
+
+// Chatbot simulation
+function sendMessage() {
+  const chatbox = document.getElementById('chatbox');
+  const input = document.getElementById('userInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  chatbox.innerHTML += `<div><b>You:</b> ${msg}</div>`;
+  input.value = '';
+
+  const p = JSON.parse(localStorage.getItem(PKEY) || '{}');
+  let reply = 'Please complete your profile first.';
+  if (p.name) {
+    if (msg.toLowerCase().includes('career')) {
+      reply = `Based on your interest in ${p.interest}, you can explore roles like ${suggestCareer(p.interest)}.`;
+    } else {
+      reply = 'Try asking about career suggestions!';
+    }
+  }
+  chatbox.innerHTML += `<div><b>Bot:</b> ${reply}</div>`;
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function suggestCareer(interest) {
+  switch (interest) {
+    case 'Technology': return 'Software Engineer, Data Analyst, or AI Developer';
+    case 'Design': return 'Graphic Designer, UI/UX Specialist, or Animator';
+    case 'Business': return 'Marketing Executive, Financial Analyst, or Entrepreneur';
+    case 'Science': return 'Researcher, Biotechnologist, or Lab Analyst';
+    case 'Arts': return 'Writer, Musician, or Creative Director';
+    default: return 'various exciting careers!';
+  }
+}
+
+// Initialize preview
+refreshProfilePreview();
+</script>
+</body>
+</html>
